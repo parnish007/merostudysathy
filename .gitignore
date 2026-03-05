@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+*.log
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Production
+*.tsbuildinfo
+next-env.d.ts
+
+# Local Development
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Local Data (IMPORTANT - contains user documents and API keys)
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Uploads
+uploads/
+*.pdf
+
+# Cache
+.cache/
+*.cache
+
+# OS
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Temporary
+tmp/
+temp/
+*.tmp
+
+# Agent Context Files
+AGENT_*.md
+DECISIONS.md
+ROADMAP.md
+*.log
