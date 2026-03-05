@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserSettings, saveUserSettings, clearApiKeys } from "@/lib/storage/settings";
 
+function maskApiKey(apiKey: string): string {
+    if (!apiKey) return "";
+    if (apiKey.length <= 8) return "*".repeat(apiKey.length);
+    const start = apiKey.slice(0, 4);
+    const end = apiKey.slice(-4);
+    return `${start}${"*".repeat(Math.max(apiKey.length - 8, 4))}${end}`;
+}
+
 export async function GET() {
     try {
         const settings = getUserSettings();
@@ -15,6 +23,7 @@ export async function GET() {
             provider: settings.provider,
             model: settings.model,
             embeddingModel: settings.embeddingModel,
+            apiKeyMasked: maskApiKey(settings.apiKey),
         });
     } catch (error) {
         console.error("Settings GET error:", error);
@@ -52,7 +61,7 @@ export async function POST(request: NextRequest) {
             embeddingModel,
         });
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, apiKeyMasked: maskApiKey(finalApiKey) });
     } catch (error) {
         console.error("Settings POST error:", error);
         return NextResponse.json({ error: "Failed to save settings" }, { status: 500 });

@@ -22,6 +22,7 @@ export function SettingsForm() {
     const [apiKey, setApiKey] = useState("");
     const [model, setModel] = useState("");
     const [isConfigured, setIsConfigured] = useState(false);
+    const [savedKeyMask, setSavedKeyMask] = useState("");
     const [showKey, setShowKey] = useState(false);
 
     useEffect(() => {
@@ -31,19 +32,19 @@ export function SettingsForm() {
     const loadSettings = async () => {
         try {
             const res = await fetch("/api/settings");
-            if (res.ok) {
-                const data = await res.json();
-                if (data.provider) setProvider(data.provider);
-                if (data.model) setModel(data.model);
-                if (data.configured) setIsConfigured(true);
-            }
+            if (!res.ok) return;
+
+            const data = await res.json();
+            if (data.provider) setProvider(data.provider);
+            if (data.model) setModel(data.model);
+            if (data.configured) setIsConfigured(true);
+            if (data.apiKeyMasked) setSavedKeyMask(data.apiKeyMasked);
         } catch (error) {
             console.error("Failed to load settings:", error);
         }
     };
 
     const saveSettings = async () => {
-        // If configured, we only need model/provider unless user entered a new key
         if (!isConfigured && !apiKey) {
             toast({
                 title: "Missing API Key",
@@ -64,7 +65,7 @@ export function SettingsForm() {
 
         setLoading(true);
         try {
-            const payload: any = { provider, model };
+            const payload: Record<string, string> = { provider, model };
             if (apiKey) payload.apiKey = apiKey;
 
             const res = await fetch("/api/settings", {
@@ -73,20 +74,24 @@ export function SettingsForm() {
                 body: JSON.stringify(payload),
             });
 
-            if (res.ok) {
-                toast({
-                    title: "Settings saved",
-                    description: "Your configuration has been updated successfully",
-                });
-                setApiKey(""); // Clear input
-                setIsConfigured(true);
-            } else {
-                throw new Error("Failed to save");
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(data?.error || "Failed to save settings");
             }
+
+            toast({
+                title: "Settings saved",
+                description: "Your configuration has been updated successfully",
+            });
+
+            setApiKey("");
+            setIsConfigured(true);
+            if (data?.apiKeyMasked) setSavedKeyMask(data.apiKeyMasked);
+            await loadSettings();
         } catch (error) {
             toast({
                 title: "Error",
-                description: "Failed to save settings",
+                description: error instanceof Error ? error.message : "Failed to save settings",
                 variant: "destructive",
             });
         } finally {
@@ -99,6 +104,7 @@ export function SettingsForm() {
             await fetch("/api/settings", { method: "DELETE" });
             setApiKey("");
             setIsConfigured(false);
+            setSavedKeyMask("");
             toast({
                 title: "Configuration cleared",
                 description: "Your settings have been reset",
@@ -117,14 +123,17 @@ export function SettingsForm() {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     LLM Configuration
-                    {isConfigured && <span className="text-xs font-normal text-muted-foreground bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full flex items-center gap-1"><Check className="w-3 h-3" /> Configured</span>}
+                    {isConfigured && (
+                        <span className="text-xs font-normal text-muted-foreground bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Check className="w-3 h-3" /> Configured
+                        </span>
+                    )}
                 </CardTitle>
                 <CardDescription>
                     Configure your AI provider. API keys are encrypted and stored locally.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                {/* Provider Selection */}
                 <div className="space-y-2">
                     <Label htmlFor="provider">AI Provider</Label>
                     <Select value={provider} onValueChange={setProvider}>
@@ -139,14 +148,15 @@ export function SettingsForm() {
                     </Select>
                 </div>
 
-                {/* API Key */}
                 <div className="space-y-2">
-                    <Label htmlFor="apiKey">API Key {isConfigured && <span className="text-muted-foreground font-normal">(Leave empty to keep current key)</span>}</Label>
+                    <Label htmlFor="apiKey">
+                        API Key {isConfigured && <span className="text-muted-foreground font-normal">(Leave empty to keep current key)</span>}
+                    </Label>
                     <div className="relative">
                         <Input
                             id="apiKey"
                             type={showKey ? "text" : "password"}
-                            placeholder={isConfigured ? "••••••••••••••••" : "sk-..."}
+                            placeholder={isConfigured ? "********" : "sk-..."}
                             value={apiKey}
                             onChange={(e) => setApiKey(e.target.value)}
                             className={isConfigured && !apiKey ? "border-green-500/50 bg-green-50/50 dark:bg-green-900/10" : ""}
@@ -158,40 +168,47 @@ export function SettingsForm() {
                             className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                             onClick={() => setShowKey(!showKey)}
                         >
-                            {showKey ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+                            {showKey ? (
+                                <EyeOff className="w-4 h-4 text-muted-foreground" />
+                            ) : (
+                                <Eye className="w-4 h-4 text-muted-foreground" />
+                            )}
                         </Button>
                     </div>
-
                     <p className="text-xs text-muted-foreground">
-                        We only use the key for this session. It never leaves your machine.
+                        {isConfigured && savedKeyMask
+                            ? `Saved key: ${savedKeyMask}`
+                            : "Your key is encrypted and stored locally on this machine."}
                     </p>
                 </div>
 
-                {/* Model Selection */}
                 <div className="space-y-2">
                     <Label htmlFor="model">Model Name</Label>
                     <Input
                         id="model"
                         placeholder={
                             provider === "openai"
-                                ? "gpt-4-turbo-preview"
+                                ? "gpt-4o-mini"
                                 : provider === "gemini"
-                                    ? "gemini-1.5-pro"
-                                    : "claude-3-opus-20240229"
+                                    ? "gemini-1.5-flash"
+                                    : "claude-3-5-sonnet-20240620"
                         }
                         value={model}
                         onChange={(e) => setModel(e.target.value)}
                     />
                     <p className="text-xs text-muted-foreground">
-                        Recommended: {provider === "openai" && "gpt-4o or gpt-3.5-turbo"}
-                        {provider === "gemini" && "gemini-1.5-pro or gemini-1.5-flash"}
+                        Recommended: {provider === "openai" && "gpt-4o-mini or gpt-4o"}
+                        {provider === "gemini" && "gemini-1.5-flash or gemini-1.5-pro"}
                         {provider === "claude" && "claude-3-5-sonnet-20240620"}
                     </p>
                 </div>
 
-                {/* Actions */}
                 <div className="flex gap-3 pt-4">
-                    <Button onClick={saveSettings} disabled={loading} className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+                    <Button
+                        onClick={saveSettings}
+                        disabled={loading}
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                    >
                         {loading ? (
                             <>
                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

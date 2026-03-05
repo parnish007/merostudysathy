@@ -10,6 +10,10 @@ import { useToast } from "@/components/ui/use-toast";
 import { Upload, FileText, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+function isPdfFile(file: File): boolean {
+    return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+}
+
 export function UploadForm() {
     const router = useRouter();
     const { toast } = useToast();
@@ -17,6 +21,44 @@ export function UploadForm() {
     const [dragActive, setDragActive] = useState(false);
     const [textInput, setTextInput] = useState("");
     const [title, setTitle] = useState("");
+
+    const uploadPDF = useCallback(
+        async (file: File) => {
+            setLoading(true);
+            try {
+                const formData = new FormData();
+                formData.append("file", file);
+
+                const res = await fetch("/api/docs/upload", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data?.error || "Upload failed");
+                }
+
+                toast({
+                    title: "PDF uploaded",
+                    description: "Your document has been uploaded successfully",
+                });
+                router.push(`/doc/${data.docId}`);
+            } catch (error) {
+                toast({
+                    title: "Upload failed",
+                    description:
+                        error instanceof Error
+                            ? error.message
+                            : "Failed to upload PDF. Please try again.",
+                    variant: "destructive",
+                });
+            } finally {
+                setLoading(false);
+            }
+        },
+        [router, toast]
+    );
 
     const handleDrag = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -28,28 +70,31 @@ export function UploadForm() {
         }
     }, []);
 
-    const handleDrop = useCallback(async (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
+    const handleDrop = useCallback(
+        async (e: React.DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDragActive(false);
 
-        const files = Array.from(e.dataTransfer.files);
-        const pdfFile = files.find((f) => f.type === "application/pdf");
+            const files = Array.from(e.dataTransfer.files);
+            const pdfFile = files.find((f) => isPdfFile(f));
 
-        if (pdfFile) {
-            await uploadPDF(pdfFile);
-        } else {
-            toast({
-                title: "Invalid file",
-                description: "Please upload a PDF file",
-                variant: "destructive",
-            });
-        }
-    }, []);
+            if (pdfFile) {
+                await uploadPDF(pdfFile);
+            } else {
+                toast({
+                    title: "Invalid file",
+                    description: "Please upload a PDF file",
+                    variant: "destructive",
+                });
+            }
+        },
+        [toast, uploadPDF]
+    );
 
     const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file && file.type === "application/pdf") {
+        if (file && isPdfFile(file)) {
             await uploadPDF(file);
         } else {
             toast({
@@ -57,38 +102,6 @@ export function UploadForm() {
                 description: "Please upload a PDF file",
                 variant: "destructive",
             });
-        }
-    };
-
-    const uploadPDF = async (file: File) => {
-        setLoading(true);
-        try {
-            const formData = new FormData();
-            formData.append("file", file);
-
-            const res = await fetch("/api/docs/upload", {
-                method: "POST",
-                body: formData,
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                toast({
-                    title: "PDF uploaded",
-                    description: "Your document has been uploaded successfully",
-                });
-                router.push(`/doc/${data.docId}`);
-            } else {
-                throw new Error("Upload failed");
-            }
-        } catch (error) {
-            toast({
-                title: "Upload failed",
-                description: "Failed to upload PDF. Please try again.",
-                variant: "destructive",
-            });
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -110,20 +123,23 @@ export function UploadForm() {
                 body: JSON.stringify({ text: textInput, title }),
             });
 
-            if (res.ok) {
-                const data = await res.json();
-                toast({
-                    title: "Text uploaded",
-                    description: "Your content has been saved successfully",
-                });
-                router.push(`/doc/${data.docId}`);
-            } else {
-                throw new Error("Upload failed");
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(data?.error || "Failed to save text");
             }
+
+            toast({
+                title: "Text uploaded",
+                description: "Your content has been saved successfully",
+            });
+            router.push(`/doc/${data.docId}`);
         } catch (error) {
             toast({
                 title: "Upload failed",
-                description: "Failed to save text. Please try again.",
+                description:
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to save text. Please try again.",
                 variant: "destructive",
             });
         } finally {
@@ -142,10 +158,11 @@ export function UploadForm() {
 
                     <TabsContent value="pdf">
                         <div
-                            className={`relative border-2 border-dashed rounded-lg p-12 text-center transition-colors ${dragActive
+                            className={`relative border-2 border-dashed rounded-lg p-12 text-center transition-colors ${
+                                dragActive
                                     ? "border-primary bg-primary/5"
                                     : "border-muted-foreground/25 hover:border-primary/50"
-                                }`}
+                            }`}
                             onDragEnter={handleDrag}
                             onDragLeave={handleDrag}
                             onDragOver={handleDrag}
@@ -155,7 +172,7 @@ export function UploadForm() {
                                 type="file"
                                 id="file-upload"
                                 className="hidden"
-                                accept=".pdf"
+                                accept=".pdf,application/pdf"
                                 onChange={handleFileInput}
                                 disabled={loading}
                             />

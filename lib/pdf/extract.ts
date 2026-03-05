@@ -1,7 +1,7 @@
 import fs from "fs";
 
-// Use require for pdf-parse as it doesn't have proper ESM support
-const pdf = require("pdf-parse");
+// Use direct parser entry to avoid pdf-parse's debug bootstrap path.
+const pdf = require("pdf-parse/lib/pdf-parse.js");
 
 
 export interface PDFExtractionResult {
@@ -16,19 +16,21 @@ export interface PDFExtractionResult {
 export async function extractPDFText(filePath: string): Promise<PDFExtractionResult> {
     const dataBuffer = fs.readFileSync(filePath);
     const data = await pdf(dataBuffer);
+    const text = data.text || "";
+    const pageCount = data.numpages || 1;
 
     // Extract text by page (pdf-parse doesn't provide this directly, so we use the full text)
     // For a production app, you'd want to use a library that extracts per-page text
     const pages = [
         {
             pageNumber: 1,
-            text: data.text,
+            text,
         },
     ];
 
     return {
-        text: data.text,
-        pageCount: data.numpages,
+        text,
+        pageCount,
         pages,
     };
 }
