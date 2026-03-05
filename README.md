@@ -1,49 +1,145 @@
-# MeroStudySathy
+<div align="center">
 
-An intelligent PDF tutor that actually helps you learn instead of just highlighting text you'll never read again.
+# 📚 MeroStudySathy
+
+### An intelligent multi-agent PDF tutor that actually teaches you — not just highlights text you'll never read again.
+
+[![Next.js](https://img.shields.io/badge/Next.js_14-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![SQLite](https://img.shields.io/badge/SQLite_Vector_Store-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+
+![MeroStudySathy Banner](./images/banner.png)
+
+</div>
 
 ---
 
-## The Problem
+## 🎯 The Problem
 
-Let's be honest: learning from PDFs sucks.
+Let's be honest — learning from PDFs sucks.
 
-You download a 200-page technical manual, open it with good intentions, and then what? You're on your own. No roadmap, no guidance, no feedback. Just you, a wall of text, and the creeping realization that you have no idea where to start.
+You download a 200-page technical manual with good intentions. Then what? You're on your own. No roadmap, no guidance, no feedback. Just you, a wall of text, and the creeping realization you have no idea where to start.
 
 Traditional study methods are broken:
-- **No structure** - Which chapter first? What's actually important?
-- **No interaction** - Reading is passive. Your brain checks out after page 3.
-- **No feedback** - Did you actually understand that? Who knows.
-- **No accountability** - Easy to skim, easier to forget.
 
-You end up highlighting random sentences, taking notes you'll never review, and pretending you learned something.
-
----
-
-## The Solution
-
-LearnFlow turns static PDFs into interactive learning experiences. Think of it as having a patient tutor who actually read the material and knows how to teach it.
-
-Here's what happens:
-
-**1. Upload your PDF**  
-Drop in any document - textbook, research paper, technical manual, whatever.
-
-**2. AI analyzes and creates a learning plan**  
-The system reads through your document, identifies the key concepts, and builds a structured learning path. No more guessing what to read first.
-
-**3. Interactive teaching sessions**  
-Instead of staring at walls of text, you get clear explanations following a proven teaching structure. The system breaks down concepts, explains why they matter, shows examples, and warns you about common mistakes.
-
-**4. Practice with real questions**  
-Multiple choice, short answer, and conceptual questions generated from your material. You answer, get detailed feedback, and actually know if you understood it.
-
-**5. Track your progress**  
-See what you've mastered, what needs work, and where you're struggling. No more lying to yourself about "getting it."
+| Problem | Reality |
+|--------|---------|
+| **No structure** | Which chapter first? What's actually important? |
+| **No interaction** | Reading is passive. Your brain checks out after page 3. |
+| **No feedback** | Did you actually understand that? Who knows. |
+| **No accountability** | Easy to skim, easier to forget. |
 
 ---
 
-## System Architecture
+## ✅ The Solution
+
+MeroStudySathy turns static PDFs into interactive learning experiences. Think of it as a patient tutor who actually read the material and knows how to teach it.
+
+![App UI Overview](./images/ui-overview.png)
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18 or higher
+- An API key from OpenAI, Google AI, or Anthropic
+
+### Installation
+
+```bash
+git clone https://github.com/parnish007/merostudysathy.git
+cd merostudysathy
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000`
+
+### First-Time Setup
+
+**1. Configure your LLM provider**
+
+Go to Settings and choose your provider:
+
+| Provider | Recommended Model |
+|----------|------------------|
+| OpenAI | `gpt-4-turbo-preview` or `gpt-3.5-turbo` |
+| Google | `gemini-pro` or `gemini-1.5-pro` |
+| Anthropic | `claude-3-opus-20240229` or `claude-3-sonnet-20240229` |
+
+Your API key is encrypted with AES-256-CBC before local storage. The UI shows a masked value like `sk-1***9x2` — nobody else sees it.
+
+**2. Upload a document**
+
+![Upload Section](./images/upload-section.png)
+
+Drag and drop any PDF or paste text directly. The system extracts text page-by-page and builds a searchable vector index automatically.
+
+**3. View your saved documents**
+
+![Saved PDFs](./images/saved-pdfs.png)
+
+All uploaded documents are stored locally. Click any to resume learning exactly where you left off — no re-processing needed.
+
+**4. Generate a learning plan**
+
+Hit **Generate Plan** and let the AI analyze your document. The Planner Agent reads through your content, identifies key concepts, and builds a structured learning path.
+
+![Study Plan](./images/study-plan.png)
+
+**5. Start an interactive session**
+
+Click any section in your plan to begin. The Teacher Agent explains concepts using a proven 7-part structure with citations back to your document.
+
+![Inside Study Session](./images/study-session.png)
+
+**6. Ask follow-up questions**
+
+After each teaching session, ask anything — *"why does this work?"*, *"can you give me a simpler example?"*, *"how does this connect to chapter 2?"*. The agent answers from your document's context.
+
+**7. Practice & get evaluated**
+
+Switch to the Practice tab. Answer MCQ, short answer, and conceptual questions. Get detailed feedback and see exactly what you've mastered.
+
+---
+
+## ✨ Features
+
+### Core Features
+
+- **Multi-agent architecture** — Planner, Teacher, Practice, and Evaluator agents working together
+- **Multi-provider LLM support** — OpenAI, Google Gemini, and Anthropic Claude
+- **RAG pipeline** — PDF text → chunking → embeddings → SQLite vector store → cosine similarity retrieval
+- **Streaming teaching sessions** — responses stream in real-time with source citations `[Source X, Page Y]`
+- **Conversational follow-up** — ask questions about anything in the document after each session
+- **Practice question generation** — MCQ, short answer, and conceptual "why" questions from your material
+- **Answer evaluation with feedback** — scored 0-100 with detailed explanation of what you got right/wrong
+- **Progress tracking** — see what you've mastered and what needs work
+- **Weak topic identification** — system flags concepts you consistently struggle with
+
+### Performance & Privacy
+
+- **🔥 Response caching** — once a teaching session is generated for a section, it's saved locally forever. Revisiting the same section costs zero API credits — no re-generation, no burnout
+- **🔒 Local-first** — everything runs on your machine. Documents, embeddings, API keys — nothing leaves your device
+- **🔑 AES-256-CBC encryption** — API keys encrypted with machine-specific keys before storage
+- **⚡ Batch embeddings** — generated in batches of 100 for efficiency
+- **60–80% cost reduction** — through intelligent response caching on repeated queries
+
+### UI & UX
+
+- PDF viewer with navigation and zoom
+- Dark mode
+- Responsive design
+- Masked API key display in settings
+
+---
+
+## 🏗️ System Architecture
+
+![Pipeline Architecture](./images/pipeline.png)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -65,13 +161,13 @@ See what you've mastered, what needs work, and where you're struggling. No more 
                              ▼
                     ┌────────────────┐
                     │   EMBEDDINGS   │
-                    │  (your LLM)    │
+                    │  (batch: 100)  │
                     └────────┬───────┘
                              │
                              ▼
                 ┌────────────────────────┐
-                │  SQLITE VECTOR STORE   │
-                │    (local database)    │
+                │  SQLITE VECTOR STORE   │  ←── Response Cache Layer
+                │    (local database)    │       (0 API cost on repeat)
                 └───────────┬────────────┘
                             │
         ┌───────────────────┼───────────────────┐
@@ -81,7 +177,6 @@ See what you've mastered, what needs work, and where you're struggling. No more 
    │ PLANNER │        │ TEACHER │        │PRACTICE │
    │  AGENT  │        │  AGENT  │        │  AGENT  │
    └────┬────┘        └────┬────┘        └────┬────┘
-        │                  │                   │
         │                  │                   │
         ▼                  ▼                   ▼
    Learning Plan    Teaching Sessions    Quiz Questions
@@ -96,163 +191,91 @@ See what you've mastered, what needs work, and where you're struggling. No more 
                     └──────┬──────┘
                            │
                            ▼
-                    Progress Tracking
-                    Weak Topic ID
+                  Progress Tracking
+                  Weak Topic Identification
 ```
-
-Everything runs locally. Your documents never leave your machine.
 
 ---
 
-## Data Flow Pipeline
+## 🔄 Data Flow Pipeline
+
+<details>
+<summary><strong>Upload Phase</strong></summary>
 
 ```
-UPLOAD PHASE
-────────────
 User uploads PDF
       │
-      ├─→ Extract text (pdf-parse)
-      │
+      ├─→ Extract text per page (pdf-parse)
       ├─→ Store in /data/uploads/{id}.txt
-      │
       └─→ Create document record in SQLite
+```
+</details>
 
+<details>
+<summary><strong>Indexing Phase</strong></summary>
 
-INDEXING PHASE
-──────────────
+```
 User clicks "Generate Plan"
       │
-      ├─→ Load document text
-      │
-      ├─→ Chunk text (1000 tokens, 150 overlap)
-      │         │
-      │         └─→ Store chunks in SQLite
-      │
-      ├─→ Generate embeddings (batch of 100)
-      │         │
-      │         └─→ Store vectors in SQLite
-      │
-      └─→ Analyze structure → Generate plan
-                │
-                └─→ Store plan in SQLite
+      ├─→ Chunk text (1000 tokens, 150 overlap) → store in SQLite
+      ├─→ Generate embeddings (batch of 100) → store vectors in SQLite
+      └─→ Analyze structure → Generate plan → store plan in SQLite
+```
+</details>
 
+<details>
+<summary><strong>Learning Phase</strong></summary>
 
-LEARNING PHASE
-──────────────
-User selects a part
+```
+User selects a section
       │
-      ├─→ Build query from part title
+      ├─→ Check response cache (SQLite)
+      │         ├─→ HIT  → return cached response (0 API cost)
+      │         └─→ MISS → continue below
       │
-      ├─→ Vector search (top-5 chunks)
-      │         │
-      │         └─→ Cosine similarity ranking
-      │
-      ├─→ Format context with citations
-      │
-      └─→ Stream teaching response
-                │
-                └─→ Display with [Source X, Page Y]
+      ├─→ Build query from section title
+      ├─→ Vector search (top-5 chunks, cosine similarity)
+      ├─→ Format context with page citations
+      ├─→ Stream teaching response
+      └─→ Save to cache → Display with [Source X, Page Y]
+```
+</details>
 
+<details>
+<summary><strong>Practice Phase</strong></summary>
 
-PRACTICE PHASE
-──────────────
+```
 User switches to Practice
       │
       ├─→ Retrieve chunks for topic
-      │
-      ├─→ Generate questions (Practice Agent)
-      │         │
-      │         └─→ MCQ, Short Answer, Why Questions
-      │
+      ├─→ Generate questions (MCQ, Short Answer, Why)
       ├─→ User submits answer
-      │
-      ├─→ Evaluate (Evaluator Agent)
-      │         │
-      │         ├─→ Score (0-100)
-      │         ├─→ Detailed feedback
-      │         └─→ Identify weak topics
-      │
+      ├─→ Evaluate: Score (0-100) + Detailed feedback + Weak topic ID
       └─→ Update progress in SQLite
 ```
+</details>
 
 ---
 
-## Quick Start
+## 🧠 How the Teaching Works
 
-### Prerequisites
+Every lesson follows a **7-part structure** based on educational research:
 
-- Node.js 18 or higher
-- An API key from OpenAI, Google AI, or Anthropic
+| Step | What Happens |
+|------|-------------|
+| 1. **Definition** | What is this concept? |
+| 2. **Why It Matters** | Real-world relevance |
+| 3. **Core Theory** | How it actually works |
+| 4. **Examples** | Concrete applications |
+| 5. **Common Mistakes** | What to avoid |
+| 6. **Recap** | Quick summary |
+| 7. **Next Steps** | What's coming next |
 
-### Installation
-
-```bash
-git clone https://github.com/parnish007/merostudysathy.git
-cd merostudysathy
-npm install
-npm run dev
-```
-
-Open `http://localhost:3000`
-
-### First-Time Setup
-
-**1. Configure your API**
-
-Click the settings icon. Choose your provider, paste your API key, and specify the model:
-- OpenAI: `gpt-4-turbo-preview` or `gpt-3.5-turbo`
-- Google: `gemini-pro` or `gemini-1.5-pro`
-- Anthropic: `claude-3-opus-20240229` or `claude-3-sonnet-20240229`
-
-Your key gets encrypted and stored locally. Nobody else sees it.
-
-**2. Upload a document**
-
-Drag and drop a PDF or paste text directly. Wait for it to process.
-
-**3. Generate a learning plan**
-
-Hit "Generate Plan" and let the AI analyze your document. This takes a minute or two depending on size.
-
-**4. Start learning**
-
-Pick a section from the sidebar. Read the explanation. Ask questions. Move to the next section when ready.
-
-**5. Practice**
-
-Switch to the Practice tab. Answer questions. Get feedback. See what you actually learned.
+Every response includes citations like `[Source 3, Page 12]` — you can verify everything against your original document.
 
 ---
 
-## Features
-
-### What Works Right Now
-
-- Multi-provider LLM support (OpenAI, Google, Anthropic)
-- Encrypted local storage for API keys
-- PDF text extraction with page tracking
-- Intelligent text chunking with context overlap
-- Vector embeddings and similarity search
-- AI-generated learning plans
-- Streaming teaching sessions with source citations
-- Practice question generation (MCQ, short answer, conceptual)
-- Answer evaluation with detailed feedback
-- Progress tracking and weak topic identification
-- Response caching (60-80% cost reduction)
-- PDF viewer with navigation and zoom
-- Dark mode
-- Responsive design
-
-### What's Coming
-
-- Spaced repetition scheduling
-- Collaborative learning features
-- Mobile app
-- Local LLM support (Ollama)
-
----
-
-## Tech Stack
+## 🛠️ Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -260,130 +283,90 @@ Switch to the Practice tab. Answer questions. Get feedback. See what you actuall
 | Language | TypeScript |
 | Styling | Tailwind CSS + shadcn/ui |
 | Database | SQLite (better-sqlite3) |
+| Vector Store | SQLite (cosine similarity) |
 | PDF Processing | pdf-parse |
 | LLM Integration | OpenAI / Gemini / Claude APIs |
-| Vector Search | Cosine similarity |
+| Caching | SQLite response cache |
 | Encryption | AES-256-CBC |
 
 ---
 
-## Privacy & Security
+## 📁 Project Structure
+
+```
+merostudysathy/
+├── app/
+│   ├── page.tsx              # Home / upload page
+│   ├── settings/             # API key configuration
+│   ├── doc/[id]/             # Learning interface
+│   └── api/                  # API routes
+├── components/
+│   ├── ui/                   # shadcn/ui components
+│   └── *.tsx                 # Custom components
+├── lib/
+│   ├── agents/               # Planner, Teacher, Practice, Evaluator
+│   ├── llm/                  # Multi-provider LLM clients
+│   ├── rag/                  # Chunking, embeddings, vector search
+│   ├── storage/              # SQLite DB + response cache
+│   └── pdf/                  # PDF extraction
+├── images/                   # README screenshots
+├── docs/
+│   ├── architecture.md
+│   ├── api-reference.md
+│   └── development.md
+└── data/                     # Local data — gitignored
+    ├── tutor.db              # SQLite database
+    └── uploads/              # Uploaded files
+```
+
+---
+
+## 🔒 Privacy & Security
 
 Everything stays on your machine:
-- Documents stored in local `/data` folder
-- API keys encrypted with machine-specific keys
-- Vector embeddings in local SQLite database
-- No external servers, no data collection, no telemetry
+
+- 📄 Documents stored in local `/data` folder
+- 🔑 API keys encrypted with AES-256-CBC + machine-specific keys
+- 🗄️ Vector embeddings in local SQLite database
+- 💾 Response cache in local SQLite — no repeated API calls
+- 🚫 No external servers, no data collection, no telemetry
 
 Delete the `/data` folder and everything's gone. Simple as that.
 
 ---
 
-## Project Structure
+## 🗺️ Roadmap
 
-```
-merostudysathy/
-├── app/                    # Next.js app directory
-│   ├── page.tsx           # Home page
-│   ├── settings/          # Settings page
-│   ├── doc/[id]/          # Learning interface
-│   └── api/               # API routes
-├── components/            # React components
-│   ├── ui/               # shadcn components
-│   └── *.tsx             # Custom components
-├── lib/                   # Core logic
-│   ├── agents/           # AI agents
-│   ├── llm/              # LLM providers
-│   ├── rag/              # RAG pipeline
-│   ├── storage/          # Database & cache
-│   └── pdf/              # PDF processing
-├── docs/                  # Documentation
-│   ├── architecture.md
-│   ├── api-reference.md
-│   └── development.md
-└── data/                  # Local data (gitignored)
-    ├── tutor.db          # SQLite database
-    └── uploads/          # Uploaded files
-```
+- [x] Multi-agent RAG pipeline (Planner, Teacher, Practice, Evaluator)
+- [x] Multi-provider LLM support
+- [x] Response caching (zero repeat API cost)
+- [x] Conversational follow-up chat per section
+- [x] Progress tracking + weak topic identification
+- [x] AES-256 encrypted local key storage
+- [ ] RAPTOR tree indexing for hierarchical retrieval
+- [ ] Spaced repetition scheduling
+- [ ] Local LLM support (Ollama)
+- [ ] Collaborative learning features
+- [ ] Mobile app
 
 ---
 
-## Documentation
+## 🤝 Contributing
 
-Detailed documentation is in the `/docs` folder:
-- [Architecture Overview](./docs/architecture.md) - System design and data flow
-- [API Reference](./docs/api-reference.md) - Complete endpoint documentation
-- [Development Guide](./docs/development.md) - Setup and contribution guide
+This started as a personal project to solve my own learning problems. If you find it useful and want to contribute, open an issue or submit a PR.
 
 ---
 
-## Development
+## 📄 License
 
-### Run Development Server
-```bash
-npm run dev
-```
-
-### Build for Production
-Open `http://localhost:3000`.
-
-### 3. Configure your LLM provider
-
-Go to `/settings` and set:
-
-- provider: `openai` | `gemini` | `claude`
-- model: your chat model name
-- api key
-
-The API key is encrypted before local storage.
-After saving, the UI intentionally shows a masked value (for example `sk-1***9x2`) instead of the raw key.
-
-### 4. First learning flow
-
-1. Upload a PDF or paste text on the home page.
-2. Open the document page (`/doc/[id]`).
-3. Click **Generate Plan**.
-4. Select a plan part and start learning in chat.
-5. Use practice/evaluation to update progress.
-
-## Scripts```bash
-npm run build
-npm start
-```
-
-### Lint
-```bash
-npm run lint
-```
+MIT — use it however you want.
 
 ---
 
-## How the Teaching Works
+<div align="center">
 
-The system follows a 7-part teaching structure based on educational research:
+Built by [Trilochan Sharma](https://github.com/parnish007) • [Portfolio](https://parnish-aka-trilochan.vercel.app/) • [LinkedIn](https://linkedin.com/in/trilochan-sharma-995851370/)
 
-1. **Definition** - What is this concept?
-2. **Why It Matters** - Real-world relevance
-3. **Core Theory** - How it actually works
-4. **Examples** - Concrete applications
-5. **Common Mistakes** - What to avoid
-6. **Recap** - Quick summary
-7. **Next Steps** - What's coming next
+⭐ Star this repo if it helped you learn something!
 
-Every lesson includes citations to specific pages in your document. You can verify everything.
-
----
-
-## Contributing
-
-This started as a personal project to solve my own learning problems. If you find it useful and want to contribute, feel free to open an issue or submit a PR.
-
----
-
-## License
-
-MIT - Use it however you want.
-
----
-
-**Questions? Issues? Check the [documentation](./docs/) or open an issue on GitHub.**
+</div>
