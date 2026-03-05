@@ -56,14 +56,13 @@ export function initializeDatabase() {
     )
   `);
 
-    // Create indexes
     db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_chunks_document 
+    CREATE INDEX IF NOT EXISTS idx_chunks_document
     ON chunks(document_id);
   `);
 
     db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_chunks_pages 
+    CREATE INDEX IF NOT EXISTS idx_chunks_pages
     ON chunks(page_start, page_end);
   `);
 
@@ -101,7 +100,26 @@ export function initializeDatabase() {
     )
   `);
 
-    console.log("✅ Database initialized successfully");
+    // Persistent lesson cache for each generated part
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS lesson_content (
+      document_id TEXT NOT NULL,
+      part_id TEXT NOT NULL,
+      mode TEXT NOT NULL DEFAULT 'simple',
+      content TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (document_id, part_id, mode),
+      FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
+    )
+  `);
+
+    db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_lesson_document
+    ON lesson_content(document_id)
+  `);
+
+    console.log("Database initialized successfully");
 }
 
 // Initialize on module load

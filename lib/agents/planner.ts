@@ -27,6 +27,21 @@ export interface Part {
     topics: string[];
 }
 
+function extractJsonObject(text: string): string {
+    const fenced =
+        text.match(/```json\s*([\s\S]*?)\s*```/i) ||
+        text.match(/```\s*([\s\S]*?)\s*```/);
+    if (fenced?.[1]) return fenced[1].trim();
+
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start !== -1 && end !== -1 && end > start) {
+        return text.slice(start, end + 1).trim();
+    }
+
+    return text.trim();
+}
+
 /**
  * Generate a learning plan from document chunks
  */
@@ -60,16 +75,13 @@ Create a structured learning plan with clear parts, objectives, and time estimat
     ];
 
     try {
-        const response = await provider.chat(messages, false) as string;
+        const response = (await provider.chat(messages, false)) as string;
 
-        // Extract JSON from response (handle markdown code blocks)
-        const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/) || response.match(/```\n([\s\S]*?)\n```/);
-        const jsonStr = jsonMatch ? jsonMatch[1] : response;
-
+        const jsonStr = extractJsonObject(response);
         const plan: LearningPlan = JSON.parse(jsonStr);
 
         // Validate and sanitize
-        if (!plan.parts || !Array.isArray(plan.parts)) {
+        if (!plan.outline || !plan.parts || !Array.isArray(plan.parts)) {
             throw new Error("Invalid plan structure");
         }
 
@@ -77,6 +89,10 @@ Create a structured learning plan with clear parts, objectives, and time estimat
         plan.parts = plan.parts.map((part, index) => ({
             ...part,
             id: part.id || `part-${index + 1}`,
+            title: part.title || `Part ${index + 1}`,
+            objectives: Array.isArray(part.objectives) ? part.objectives : [],
+            estimatedMinutes:
+                typeof part.estimatedMinutes === "number" ? part.estimatedMinutes : 20,
             prerequisites: part.prerequisites || [],
             topics: part.topics || [],
         }));
@@ -84,7 +100,8 @@ Create a structured learning plan with clear parts, objectives, and time estimat
         return plan;
     } catch (error) {
         console.error("Plan generation error:", error);
-        throw new Error("Failed to generate learning plan. Please try again.");
+        const detail = error instanceof Error ? error.message : "Unknown error";
+        throw new Error(`Failed to generate learning plan: ${detail}`);
     }
 }
 

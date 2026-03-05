@@ -63,7 +63,11 @@ export default function DocPage() {
                         </div>
 
                         <TabsContent value="learn" className="flex-1 m-0 overflow-hidden">
-                            <TutorChat docId={docId} selectedPart={selectedPart} />
+                            <TutorChat
+                                docId={docId}
+                                selectedPart={selectedPart}
+                                onSelectPart={setSelectedPart}
+                            />
                         </TabsContent>
 
                         <TabsContent value="progress" className="flex-1 m-0 overflow-y-auto p-6">

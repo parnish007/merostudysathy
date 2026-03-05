@@ -17,7 +17,9 @@ export async function generateEmbeddings(
         return await provider.embed(texts);
     } catch (error) {
         console.error("Embedding generation error:", error);
-        throw new Error("Failed to generate embeddings. Please check your API key and model.");
+        const detail =
+            error instanceof Error ? error.message : "Unknown embedding error";
+        throw new Error(`Failed to generate embeddings: ${detail}`);
     }
 }
 

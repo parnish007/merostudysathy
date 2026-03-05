@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generatePlan, savePlan, getPlan } from "@/lib/agents/planner";
 import { getUserSettings } from "@/lib/storage/settings";
+import db from "@/lib/storage/localDb";
 import fs from "fs";
 import path from "path";
 
@@ -40,7 +41,6 @@ export async function POST(
         }
 
         // Get document
-        const db = require("@/lib/storage/localDb").default;
         const stmt = db.prepare("SELECT * FROM documents WHERE id = ?");
         const doc = stmt.get(docId) as any;
 
@@ -60,9 +60,26 @@ export async function POST(
         }
 
         const fullText = fs.readFileSync(textPath, "utf-8");
+        if (!fullText.trim()) {
+            return NextResponse.json(
+                { error: "Document text is empty. Please re-upload a readable PDF/text." },
+                { status: 400 }
+            );
+        }
 
         // Split into sample chunks for analysis
-        const sampleChunks = fullText.split("\n\n").slice(0, 20);
+        const sampleChunks = fullText
+            .split(/\n{2,}/)
+            .map((chunk) => chunk.trim())
+            .filter(Boolean)
+            .slice(0, 20);
+
+        if (sampleChunks.length === 0) {
+            return NextResponse.json(
+                { error: "Could not extract usable text from this document." },
+                { status: 400 }
+            );
+        }
 
         // Generate plan using AI
         const plan = await generatePlan(

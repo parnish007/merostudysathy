@@ -21,6 +21,7 @@ export function SettingsForm() {
     const [provider, setProvider] = useState<string>("openai");
     const [apiKey, setApiKey] = useState("");
     const [model, setModel] = useState("");
+    const [embeddingModel, setEmbeddingModel] = useState("");
     const [isConfigured, setIsConfigured] = useState(false);
     const [savedKeyMask, setSavedKeyMask] = useState("");
     const [showKey, setShowKey] = useState(false);
@@ -37,6 +38,7 @@ export function SettingsForm() {
             const data = await res.json();
             if (data.provider) setProvider(data.provider);
             if (data.model) setModel(data.model);
+            if (data.embeddingModel) setEmbeddingModel(data.embeddingModel);
             if (data.configured) setIsConfigured(true);
             if (data.apiKeyMasked) setSavedKeyMask(data.apiKeyMasked);
         } catch (error) {
@@ -67,6 +69,7 @@ export function SettingsForm() {
         try {
             const payload: Record<string, string> = { provider, model };
             if (apiKey) payload.apiKey = apiKey;
+            if (embeddingModel.trim()) payload.embeddingModel = embeddingModel.trim();
 
             const res = await fetch("/api/settings", {
                 method: "POST",
@@ -190,7 +193,7 @@ export function SettingsForm() {
                             provider === "openai"
                                 ? "gpt-4o-mini"
                                 : provider === "gemini"
-                                    ? "gemini-1.5-flash"
+                                    ? "gemini-2.5-flash"
                                     : "claude-3-5-sonnet-20240620"
                         }
                         value={model}
@@ -198,8 +201,30 @@ export function SettingsForm() {
                     />
                     <p className="text-xs text-muted-foreground">
                         Recommended: {provider === "openai" && "gpt-4o-mini or gpt-4o"}
-                        {provider === "gemini" && "gemini-1.5-flash or gemini-1.5-pro"}
+                        {provider === "gemini" && "gemini-2.5-flash or gemini-2.0-flash"}
                         {provider === "claude" && "claude-3-5-sonnet-20240620"}
+                    </p>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="embeddingModel">Embedding Model (optional)</Label>
+                    <Input
+                        id="embeddingModel"
+                        placeholder={
+                            provider === "openai"
+                                ? "text-embedding-3-small"
+                                : provider === "gemini"
+                                    ? "text-embedding-004"
+                                    : "Not supported for Claude"
+                        }
+                        value={embeddingModel}
+                        onChange={(e) => setEmbeddingModel(e.target.value)}
+                        disabled={provider === "claude"}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        {provider === "openai" && "Example: text-embedding-3-small"}
+                        {provider === "gemini" && "Try: text-embedding-004 or gemini-embedding-001"}
+                        {provider === "claude" && "Claude embeddings are not supported in this app."}
                     </p>
                 </div>
 

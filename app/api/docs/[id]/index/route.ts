@@ -4,6 +4,7 @@ import { chunkTextWithPages } from "@/lib/rag/chunk";
 import { generateEmbeddingsBatch } from "@/lib/rag/embed";
 import { createChunk, updateChunkEmbedding } from "@/lib/storage/files";
 import { extractPDFText } from "@/lib/pdf/extract";
+import db from "@/lib/storage/localDb";
 import fs from "fs";
 import path from "path";
 
@@ -24,12 +25,25 @@ export async function POST(
         }
 
         // Get document
-        const db = require("@/lib/storage/localDb").default;
         const stmt = db.prepare("SELECT * FROM documents WHERE id = ?");
         const doc = stmt.get(docId) as any;
 
         if (!doc) {
             return NextResponse.json({ error: "Document not found" }, { status: 404 });
+        }
+
+        const existing = db
+            .prepare(
+                "SELECT COUNT(*) as count FROM chunks WHERE document_id = ? AND embedding IS NOT NULL"
+            )
+            .get(docId) as { count: number };
+
+        if (existing.count > 0) {
+            return NextResponse.json({
+                success: true,
+                chunksCreated: existing.count,
+                message: "Document already indexed",
+            });
         }
 
         // Get document text

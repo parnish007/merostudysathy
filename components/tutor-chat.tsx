@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Send, Loader2, BookOpen } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Message {
     role: "user" | "assistant";
@@ -15,9 +17,10 @@ interface Message {
 interface TutorChatProps {
     docId: string;
     selectedPart: string | null;
+    onSelectPart: (partId: string) => void;
 }
 
-export function TutorChat({ docId, selectedPart }: TutorChatProps) {
+export function TutorChat({ docId, selectedPart, onSelectPart }: TutorChatProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
@@ -86,6 +89,37 @@ export function TutorChat({ docId, selectedPart }: TutorChatProps) {
 
     const sendMessage = async () => {
         if (!input.trim() || loading) return;
+        const command = input.trim().toLowerCase();
+
+        if (command === "next") {
+            try {
+                const res = await fetch(`/api/docs/${docId}/plan`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const parts = data?.plan?.parts || [];
+                    const currentIndex = parts.findIndex((p: { id: string }) => p.id === selectedPart);
+                    const nextPart = currentIndex >= 0 ? parts[currentIndex + 1] : parts[0];
+
+                    if (nextPart?.id) {
+                        onSelectPart(nextPart.id);
+                        setInput("");
+                        return;
+                    }
+
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            role: "assistant",
+                            content: "You are already on the last part of this learning plan.",
+                        },
+                    ]);
+                    setInput("");
+                    return;
+                }
+            } catch (error) {
+                console.error("Failed to switch to next part:", error);
+            }
+        }
 
         const userMessage: Message = { role: "user", content: input };
         setMessages((prev) => [...prev, userMessage]);
@@ -169,9 +203,13 @@ export function TutorChat({ docId, selectedPart }: TutorChatProps) {
                                 }`}
                         >
                             <div className="prose prose-sm dark:prose-invert max-w-none">
-                                {msg.content.split("\n").map((line, i) => (
-                                    <p key={i}>{line}</p>
-                                ))}
+                                {msg.role === "assistant" ? (
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {msg.content}
+                                    </ReactMarkdown>
+                                ) : (
+                                    msg.content.split("\n").map((line, i) => <p key={i}>{line}</p>)
+                                )}
                             </div>
                             {msg.citations && msg.citations.length > 0 && (
                                 <div className="mt-3 pt-3 border-t text-xs opacity-75">

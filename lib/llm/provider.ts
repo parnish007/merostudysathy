@@ -54,7 +54,8 @@ export class OpenAIProvider implements LLMProvider {
         });
 
         if (!response.ok) {
-            throw new Error(`OpenAI API error: ${response.statusText}`);
+            const errorBody = await response.text().catch(() => "");
+            throw new Error(`OpenAI API error: ${response.status} ${errorBody || response.statusText}`);
         }
 
         if (stream) {
@@ -125,45 +126,86 @@ export class OpenAIProvider implements LLMProvider {
 export class GeminiProvider implements LLMProvider {
     private apiKey: string;
     private model: string;
+    private embeddingModel: string;
 
     constructor(config: LLMConfig) {
         this.apiKey = config.apiKey;
         this.model = config.model;
+        this.embeddingModel = config.embeddingModel || "text-embedding-004";
     }
 
     async chat(messages: Message[], stream: boolean): Promise<string | AsyncIterableIterator<string>> {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:${stream ? "streamGenerateContent" : "generateContent"
-            }?key=${this.apiKey}`;
-
-        // Convert messages to Gemini format
         const contents = this.convertMessages(messages);
+        const modelCandidates = [
+            this.model,
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-pro",
+        ];
+        const versions = ["v1beta", "v1"];
+        const method = "generateContent";
 
-        const response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents }),
-        });
+        let lastError = "Unknown Gemini error";
 
-        if (!response.ok) {
-            throw new Error(`Gemini API error: ${response.statusText}`);
+        for (const candidate of modelCandidates) {
+            for (const version of versions) {
+                const url = `https://generativelanguage.googleapis.com/${version}/models/${candidate}:${method}?key=${this.apiKey}`;
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents }),
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.text().catch(() => "");
+                    lastError = `${response.status} ${errorBody || response.statusText}`;
+
+                    // Try next version/model only for Not Found.
+                    if (response.status === 404) continue;
+                    throw new Error(`Gemini API error: ${lastError}`);
+                }
+
+                const data = await response.json();
+                const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!text) {
+                    throw new Error("Gemini API returned an invalid response payload.");
+                }
+                if (stream) {
+                    return this.singleChunkStream(text);
+                }
+                return text;
+            }
         }
 
-        if (stream) {
-            return this.streamResponse(response);
-        } else {
-            const data = await response.json();
-            return data.candidates[0].content.parts[0].text;
-        }
+        throw new Error(`Gemini API error: ${lastError}`);
     }
 
     private convertMessages(messages: Message[]) {
-        // Gemini uses a different message format
-        return messages
-            .filter((m) => m.role !== "system") // System messages handled separately
+        const systemText = messages
+            .filter((m) => m.role === "system")
+            .map((m) => m.content)
+            .join("\n\n");
+
+        const converted = messages
+            .filter((m) => m.role !== "system")
             .map((m) => ({
                 role: m.role === "assistant" ? "model" : "user",
                 parts: [{ text: m.content }],
             }));
+
+        if (systemText) {
+            if (converted.length > 0 && converted[0].role === "user") {
+                converted[0].parts[0].text = `System instructions:\n${systemText}\n\n${converted[0].parts[0].text}`;
+            } else {
+                converted.unshift({
+                    role: "user",
+                    parts: [{ text: `System instructions:\n${systemText}` }],
+                });
+            }
+        }
+
+        return converted;
     }
 
     private async *streamResponse(response: Response): AsyncIterableIterator<string> {
@@ -192,29 +234,67 @@ export class GeminiProvider implements LLMProvider {
     }
 
     async embed(texts: string[]): Promise<number[][]> {
-        // Gemini uses a different embedding endpoint
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${this.apiKey}`;
-
         const embeddings: number[][] = [];
+        const embeddingModels = [
+            this.embeddingModel,
+            "text-embedding-004",
+            "gemini-embedding-001",
+            "embedding-001",
+        ];
+        const apiVersions = ["v1beta", "v1"];
 
         for (const text of texts) {
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    content: { parts: [{ text }] },
-                }),
-            });
+            let success = false;
+            let lastError = "Unknown embedding error";
 
-            if (!response.ok) {
-                throw new Error(`Gemini Embeddings API error: ${response.statusText}`);
+            for (const model of embeddingModels) {
+                for (const version of apiVersions) {
+                    const url = `https://generativelanguage.googleapis.com/${version}/models/${model}:embedContent?key=${this.apiKey}`;
+                    const response = await fetch(url, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            content: { parts: [{ text }] },
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        const errorBody = await response.text().catch(() => "");
+                        lastError = `${response.status} ${errorBody || response.statusText}`;
+
+                        // Try next version/model for Not Found only.
+                        if (response.status === 404) continue;
+                        break;
+                    }
+
+                    const data = await response.json();
+                    if (!data?.embedding?.values || !Array.isArray(data.embedding.values)) {
+                        lastError = "Gemini Embeddings API returned invalid embedding payload";
+                        break;
+                    }
+
+                    embeddings.push(data.embedding.values);
+                    success = true;
+                    break;
+                }
+
+                if (success) {
+                    break;
+                }
             }
 
-            const data = await response.json();
-            embeddings.push(data.embedding.values);
+            if (!success) {
+                throw new Error(`Gemini Embeddings API error: ${lastError}`);
+            }
         }
 
         return embeddings;
+    }
+
+    private async *singleChunkStream(text: string): AsyncIterableIterator<string> {
+        if (text) {
+            yield text;
+        }
     }
 }
 
@@ -256,7 +336,8 @@ export class ClaudeProvider implements LLMProvider {
         });
 
         if (!response.ok) {
-            throw new Error(`Claude API error: ${response.statusText}`);
+            const errorBody = await response.text().catch(() => "");
+            throw new Error(`Claude API error: ${response.status} ${errorBody || response.statusText}`);
         }
 
         if (stream) {
